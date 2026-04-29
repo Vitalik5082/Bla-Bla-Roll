@@ -188,10 +188,8 @@ textarea{resize:vertical;min-height:60px;}
       <div class="info-row">
         <span class="info-icon">🕐</span>
         <div><div class="info-label" id="t_hours_label">Робочий час</div>
-        <div class="info-val">10:00 – 22:00 <span class="open-pill" id="t_days">Пн–Нд</span></div></div>
-      </div>
-      </div>
-        <span style="color:var(--gold);font-size:18px;">›</span>
+        <div class="info-val">10:00 – 22:00 <span class="open-pill" id="t_days">Пн–Нд</span></div>
+        </div>
       </div>
     </div>
     <div class="social-grid" style="grid-template-columns:1fr;max-width:200px;margin:8px auto 0;">
@@ -235,7 +233,7 @@ textarea{resize:vertical;min-height:60px;}
     <div class="login-card">
       <div class="login-logo">🔐</div>
       <div class="login-title">Адмін панель</div>
-      <div class="login-sub">Druzi Bar</div>
+      <div class="login-sub">Бла Бла Рол</div>
       <label>Email</label><input type="email" id="adminEmail" placeholder="admin@blablaroll.ua">
       <label>Пароль</label><input type="password" id="adminPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkLogin()">
       <button class="btn btn-gold" style="width:100%;margin-top:14px;" onclick="checkLogin()" id="loginBtn">Увійти</button>
@@ -246,7 +244,7 @@ textarea{resize:vertical;min-height:60px;}
 
 <div class="view" id="viewAdmin">
   <div class="admin-header">
-    <div><div class="admin-title">⚙️ Адмін панель</div><div class="admin-sub" id="adminUserEmail"></div></div>
+    <div><div class="admin-title">⚙️ Адмін панель</div><div class="admin-sub">Бла Бла Рол</div><div style="font-size:11px;color:var(--muted);" id="adminUserEmail"></div></div>
     <div style="display:flex;gap:6px;">
       <button class="btn btn-outline" onclick="showView('viewMenu')">Меню ↗</button>
       <button class="btn btn-outline" onclick="logout()">Вийти</button>
@@ -413,19 +411,19 @@ function tcd(c){return T[currentLang].catDescs[c]||'';}
 function sanitize(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 
 function applyLang(){
-  document.getElementById('t_fav').textContent=t('fav');
-  document.getElementById('t_fav2').textContent=t('fav');
-  document.getElementById('t_back').textContent=t('back');
-  document.getElementById('t_menu_label').textContent=t('menu');
-  document.getElementById('t_contacts_label').textContent=t('contacts');
-  document.getElementById('t_address_label').textContent=t('address');
-  document.getElementById('t_phone_label').textContent=t('phone');
-  document.getElementById('t_hours_label').textContent=t('hours');
-  const _wl=document.getElementById('t_wifi_label');if(_wl)_wl.textContent=t('wifi');
-  document.getElementById('t_days').textContent=t('days');
-  document.getElementById('headerSub').textContent=t('sub');
-  document.getElementById('searchInput').placeholder=t('search');
-  document.getElementById('langBtn').textContent=currentLang==='uk'?'EN':'УК';
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  set('t_fav',t('fav'));
+  set('t_fav2',t('fav'));
+  set('t_back',t('back'));
+  set('t_menu_label',t('menu'));
+  set('t_contacts_label',t('contacts'));
+  set('t_address_label',t('address'));
+  set('t_phone_label',t('phone'));
+  set('t_hours_label',t('hours'));
+  set('t_days',t('days'));
+  set('headerSub',t('sub'));
+  const si=document.getElementById('searchInput');if(si)si.placeholder=t('search');
+  const lb=document.getElementById('langBtn');if(lb)lb.textContent=currentLang==='uk'?'EN':'УК';
   buildMenu();
   updateFavCount();
 }
