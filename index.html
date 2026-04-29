@@ -320,12 +320,16 @@ textarea{resize:vertical;min-height:60px;}
     <div class="form-row">
       <div><label>Категорія</label>
         <select id="eCategory" onchange="updateSubcategoryOptions('eCategory','eSubcategory')">
-          <option value="Суші та роли">🍣 Суші та роли</option>
+          <option value="Роли">🍣 Роли</option>
           <option value="Піца">🍕 Піца</option>
-          <option value="Їжа">🍽️ Їжа</option>
-          <option value="Алкоголь">🍷 Алкоголь</option>
-          <option value="Безалкогольні напої">🧃 Безалкогольні напої</option>
-          <option value="Кальян">💨 Кальян</option>
+          <option value="Темпура роли">🔥 Темпура роли</option>
+          <option value="Суші Бургер">🍔 Суші Бургер</option>
+          <option value="Хенд-Рол">🌯 Хенд-Рол</option>
+          <option value="Міні роли">🍱 Міні роли</option>
+          <option value="Сети">🎁 Сети</option>
+          <option value="Снеки">🍟 Снеки</option>
+          <option value="Салати">🥗 Салати</option>
+          <option value="Напої">🥤 Напої</option>
         </select>
       </div>
       <div><label>Підкатегорія</label><select id="eSubcategory"></select></div>
@@ -449,11 +453,39 @@ function clearCache(){localStorage.removeItem(CACHE_KEY);}
 async function uploadFile(input,urlId,prevId){
   if(!input.files||!input.files[0])return;
   const file=input.files[0];
-  const fname=`${Date.now()}.${file.name.split('.').pop()}`;
-  showAlert('⏳ Завантаження...','success');
-  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fname}`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(authToken||SUPABASE_KEY),'Content-Type':file.type,'x-upsert':'true'},body:file});
-  if(r.ok){const url=`${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fname}`;document.getElementById(urlId).value=url;const p=document.getElementById(prevId);p.src=url;p.style.display='block';showAlert('✅ Фото завантажено!','success');}
-  else showAlert('❌ Помилка завантаження','error');
+  // Validate file type
+  if(!file.type.startsWith('image/')){showAlert('❌ Оберіть файл зображення','error');return;}
+  // Validate file size (max 5MB)
+  if(file.size>5*1024*1024){showAlert('❌ Файл занадто великий (макс 5MB)','error');return;}
+  const ext=file.name.split('.').pop().toLowerCase()||'jpg';
+  const fname=`${Date.now()}.${ext}`;
+  showAlert('⏳ Завантаження фото...','success');
+  try{
+    const r=await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fname}`,{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(authToken||SUPABASE_KEY),'Content-Type':file.type,'x-upsert':'true'},
+      body:file
+    });
+    if(r.ok){
+      const url=`${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fname}`;
+      document.getElementById(urlId).value=url;
+      const p=document.getElementById(prevId);
+      p.src=url;p.style.display='block';
+      showAlert('✅ Фото завантажено!','success');
+    }else{
+      const err=await r.json().catch(()=>({}));
+      console.error('Upload error:',err);
+      // If storage error, try to show helpful message
+      if(err.error==='Bucket not found'){
+        showAlert('❌ Сховище не налаштовано. Створи bucket "menu-images" в Supabase Storage','error');
+      } else {
+        showAlert('❌ Помилка: '+(err.message||err.error||'невідома помилка'),'error');
+      }
+    }
+  }catch(e){
+    console.error('Upload exception:',e);
+    showAlert('❌ Помилка мережі при завантаженні','error');
+  }
 }
 
 function connectWifi(){}
@@ -708,20 +740,36 @@ async function deleteItem(name){
 }
 
 function openEdit(item){
-  document.getElementById('eOrigName').value=item.name;
-  document.getElementById('eName').value=item.name;
+  document.getElementById('eOrigName').value=item.name||'';
+  document.getElementById('eName').value=item.name||'';
   document.getElementById('eDesc').value=item.description||'';
-  document.getElementById('ePrice').value=item.price;
+  document.getElementById('ePrice').value=item.price||'';
   document.getElementById('eWeight').value=item.weight||'';
-  document.getElementById('eCategory').value=item.category;
+  // Set category first, then update subcategory options, then set subcategory
+  const eCat=document.getElementById('eCategory');
+  eCat.value=item.category||'';
+  // If category not in select, add it temporarily
+  if(eCat.value!==item.category&&item.category){
+    const opt=document.createElement('option');
+    opt.value=item.category;opt.textContent=item.category;
+    eCat.appendChild(opt);eCat.value=item.category;
+  }
   updateSubcategoryOptions('eCategory','eSubcategory');
-  document.getElementById('eSubcategory').value=item.subcategory||'';
+  const eSub=document.getElementById('eSubcategory');
+  eSub.value=item.subcategory||'';
+  // If subcategory not in select, add it
+  if(eSub.value!==item.subcategory&&item.subcategory){
+    const opt=document.createElement('option');
+    opt.value=item.subcategory;opt.textContent=item.subcategory;
+    eSub.appendChild(opt);eSub.value=item.subcategory;
+  }
   document.getElementById('eBadge').value=item.badge||'';
   document.getElementById('eEmoji').value=item.emoji||'';
   document.getElementById('eTime').value=item.prep_time||'';
   document.getElementById('eImage').value=item.image_url||'';
   const p=document.getElementById('ePreview');
-  if(item.image_url){p.src=item.image_url;p.style.display='block';}else p.style.display='none';
+  if(item.image_url){p.src=item.image_url;p.style.display='block';}
+  else p.style.display='none';
   document.getElementById('editModal').style.display='flex';
 }
 function closeEdit(){document.getElementById('editModal').style.display='none';}
