@@ -40,7 +40,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .info-val{font-size:13px;font-weight:500;}
 .info-link{color:var(--gold);text-decoration:none;font-size:13px;font-weight:500;}
 .open-pill{display:inline-block;background:#e0faff;color:#0077aa;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px;}
-.social-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 12px 0;}
+.social-grid{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 12px 0;}
 .social-btn{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:12px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;color:var(--text);display:block;}
 /* DETAIL */
 .detail-header{background:#0a0e1a;}
@@ -194,9 +194,8 @@ textarea{resize:vertical;min-height:60px;}
         <span style="color:var(--gold);font-size:18px;">›</span>
       </div>
     </div>
-    <div class="social-grid">
-      <a href="https://www.instagram.com/bla_bla_roll" target="_blank" class="social-btn">📷 Instagram</a>
-      <a href="https://www.instagram.com/druzi_bar" target="_blank" class="social-btn">📷 Instagram</a>
+    <div class="social-grid" style="grid-template-columns:1fr;max-width:200px;margin:8px auto 0;">
+      <a href="https://www.instagram.com/bla_bla_roll" target="_blank" class="social-btn">📷 Instagram @bla_bla_roll</a>
     </div>
     <div class="footer">© Бла Бла Рол 2024</div>
   </div>
@@ -440,7 +439,7 @@ function updateStatus(){
 }
 
 function getH(auth=false){return{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(auth&&authToken?authToken:SUPABASE_KEY),'Content-Type':'application/json','Prefer':'return=representation'};}
-async function dbGet(t,f,o){let url=`${SUPABASE_URL}/rest/v1/${t}?select=*`;if(f)Object.entries(f).forEach(([k,v])=>url+=`&${k}=eq.${encodeURIComponent(v)}`);if(o)url+=`&order=${o}`;const r=await fetch(url,{headers:getH()});const d=await r.json();return{data:Array.isArray(d)?d:[],error:r.ok?null:d};}
+async function dbGet(t,f,o){try{let url=`${SUPABASE_URL}/rest/v1/${t}?select=*`;if(f)Object.entries(f).forEach(([k,v])=>url+=`&${k}=eq.${encodeURIComponent(v)}`);if(o)url+=`&order=${o}`;const r=await fetch(url,{headers:getH()});const d=await r.json();if(!r.ok){console.error('dbGet error:',d);return{data:[],error:d};}return{data:Array.isArray(d)?d:[],error:null};}catch(e){console.error('dbGet exception:',e);return{data:[],error:e};}}
 async function dbPost(t,row){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:getH(true),body:JSON.stringify(row)});return{error:r.ok?null:await r.json()};}
 async function dbPatch(t,vals,col,val){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${col}=eq.${encodeURIComponent(val)}`,{method:'PATCH',headers:getH(true),body:JSON.stringify(vals)});return{error:r.ok?null:await r.json()};}
 async function dbDel(t,col,val){const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?${col}=eq.${encodeURIComponent(val)}`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(authToken||SUPABASE_KEY)}});return{error:r.ok?null:await r.json()};}
@@ -502,8 +501,13 @@ async function openCategory(key,icon){
   document.getElementById('itemsList').innerHTML='<div class="loading-msg">⏳...</div>';
   showView('viewCategory');updateFavCount();
   const cached=getCached();
-  if(cached){allItems=cached;}
-  else{const{data}=await dbGet('menu_items',null,'category,subcategory,name');allItems=data||[];setCache(allItems);}
+  if(cached&&cached.length>0){allItems=cached;}
+  else{
+    const{data,error}=await dbGet('menu_items',null,'category,subcategory,name');
+    if(error){console.error('DB error:',error);document.getElementById('itemsList').innerHTML='<div class="no-results">Помилка підключення до бази даних 😕</div>';return;}
+    allItems=data||[];
+    if(allItems.length>0)setCache(allItems);
+  }
   buildCatTabs(key);
   buildSubTabs(key);
 }
