@@ -632,7 +632,7 @@ function itemHTML(item,showDel=false){
       </div>
     </div>
     <div class="item-footer">
-      <div><div class="item-price">${(()=>{try{if(item.variants){const v=JSON.parse(item.variants);if(v.length>1)return v[0].price+' – '+v[v.length-1].price+' грн';}return item.price+' грн';}catch(e){return item.price+' грн';}})()}</div>${item.weight?`<div class="item-weight">${sanitize(item.weight)}</div>`:''}</div>
+      <div><div class="item-price" style="font-size:13px;">${(()=>{try{if(item.variants){const v=JSON.parse(item.variants);if(v.length>1)return v.map(x=>x.label+': '+x.price+'₴').join(' · ');}return item.price+' грн';}catch(e){return item.price+' грн';}})()}</div>${item.weight?`<div class="item-weight">${sanitize(item.weight)}</div>`:''}</div>
       <div class="item-actions" onclick="event.stopPropagation()">
         ${showDel?`<button class="fav-btn" onclick="removeFav('${sn}')">🗑️</button>`:`<button class="fav-btn" onclick="toggleFav('${sn}',this)">${isFav?'❤️':'🤍'}</button>`}
         <button class="share-btn" onclick="shareItem('${sn}',${item.price})">↗</button>
