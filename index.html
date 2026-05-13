@@ -276,7 +276,7 @@ textarea{resize:vertical;min-height:60px;}
           <select id="fCategory" onchange="updateSubcategoryOptions('fCategory','fSubcategory')">
             <option value="Роли">🍣 Роли</option>
             <option value="Піца">🍕 Піца</option>
-            <option value="Темпура роли">🔥 Темпура роли</option>
+
             <option value="Суші Бургер">🍔 Суші Бургер</option>
             <option value="Хенд-Рол">🌯 Хенд-Рол</option>
             <option value="Міні роли">🍱 Міні роли</option>
@@ -406,14 +406,14 @@ textarea{resize:vertical;min-height:60px;}
 const SUPABASE_URL='https://wvkquixljjxwmkgvtknv.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2a3F1aXhsamp4d21rZ3Z0a252Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Njc3NTgsImV4cCI6MjA5MzA0Mzc1OH0.3RKOQcMuf_o4l87MSVs-9jN_sRGRt4POrSr7MaNihbk';
 const BUCKET='menu-images';
-const CACHE_KEY='blablaroll_menu_v1';
+const CACHE_KEY='blablaroll_menu_v2';
 const CACHE_TTL=5*60*1000;
 
 // Subcategory map
 const SUBCATS={
   'Роли':['Філадельфія','Каліфорнія','Канада','Авторські','Темпура','Запечені'],
   'Піца':['Піца'],
-  'Темпура роли':['Темпура','Запечені'],
+
   'Суші Бургер':['Суші Бургер'],
   'Хенд-Рол':['Хенд-Рол'],
   'Міні роли':['Нігірі','Гункани','Міні роли'],
@@ -425,11 +425,11 @@ const SUBCATS={
 
 const T={
   uk:{fav:'Улюблене',back:'Назад',menu:'МЕНЮ',contacts:'КОНТАКТИ',address:'Адреса',phone:'Телефон',hours:'Робочий час',wifi:'WiFi · натисни щоб підключитись',days:'Пн–Нд',search:'Пошук по всьому меню...',open:'Зараз відкрито',closed:'Зачинено',empty:'Поки тут порожньо 🍽️',nofound:'Нічого не знайдено 🔍',goMenu:'🍽️ Перейти до меню',noFav:'Поки немає улюблених ❤️',sub:'Роли та Піца · Могилів-Подільський',
-    cats:{'Роли':'Роли','Піца':'Піца','Темпура роли':'Темпура роли','Суші Бургер':'Суші Бургер','Хенд-Рол':'Хенд-Рол','Міні роли':'Міні роли','Сети':'Сети','Снеки':'Снеки','Салати':'Салати','Напої':'Напої'},
-    catDescs:{'Роли':'Класичні та авторські роли','Піца':'Тонке тісто, авторські рецепти','Темпура роли':'Хрустка темпура','Суші Бургер':'Новинка сезону','Хенд-Рол':'Хенд-рол кімбап','Міні роли':'Міні роли та нігірі','Сети':'Вигідні сети','Снеки':'Снеки та круасани','Салати':'Свіжі салати','Напої':'Алкогольні та безалкогольні'}},
+    cats:{'Роли':'Роли','Піца':'Піца','Суші Бургер':'Суші Бургер','Хенд-Рол':'Хенд-Рол','Міні роли':'Міні роли','Сети':'Сети','Снеки':'Снеки','Салати':'Салати','Напої':'Напої'},
+    catDescs:{'Роли':'Класичні та авторські роли','Піца':'Тонке тісто, авторські рецепти','Суші Бургер':'Новинка сезону','Хенд-Рол':'Хенд-рол кімбап','Міні роли':'Міні роли та нігірі','Сети':'Вигідні сети','Снеки':'Снеки та круасани','Салати':'Свіжі салати','Напої':'Алкогольні та безалкогольні'}},
   en:{fav:'Favorites',back:'Back',menu:'MENU',contacts:'CONTACTS',address:'Address',phone:'Phone',hours:'Working hours',wifi:'WiFi · tap to connect',days:'Mon–Sun',search:'Search all menu...',open:'Open now',closed:'Closed',empty:'Nothing here yet 🍽️',nofound:'Nothing found 🔍',goMenu:'🍽️ Go to menu',noFav:'No favorites yet ❤️',sub:'Rolls & Pizza · Mohyliv-Podilskyi',
-    cats:{'Роли':'Rolls','Піца':'Pizza','Темпура роли':'Tempura rolls','Суші Бургер':'Sushi Burger','Хенд-Рол':'Hand Roll','Міні роли':'Mini rolls','Сети':'Sets','Снеки':'Snacks','Салати':'Salads','Напої':'Drinks'},
-    catDescs:{'Роли':'Classic and original rolls','Піца':'Thin crust, original recipes','Темпура роли':'Crispy tempura','Суші Бургер':'Season novelty','Хенд-Рол':'Hand roll kimbap','Міні роли':'Mini rolls & nigiri','Сети':'Value sets','Снеки':'Snacks & croissants','Салати':'Fresh salads','Напої':'Alcoholic & non-alcoholic'}}
+    cats:{'Роли':'Rolls','Піца':'Pizza','Суші Бургер':'Sushi Burger','Хенд-Рол':'Hand Roll','Міні роли':'Mini rolls','Сети':'Sets','Снеки':'Snacks','Салати':'Salads','Напої':'Drinks'},
+    catDescs:{'Роли':'Classic and original rolls','Піца':'Thin crust, original recipes','Суші Бургер':'Season novelty','Хенд-Рол':'Hand roll kimbap','Міні роли':'Mini rolls & nigiri','Сети':'Value sets','Снеки':'Snacks & croissants','Салати':'Fresh salads','Напої':'Alcoholic & non-alcoholic'}}
 };
 
 let authToken=null,currentLang='uk',allItems=[],currentCat='',currentSub='',adminCat='all',_adminSearch='',_debounce=null;
@@ -526,7 +526,6 @@ function updateSubcategoryOptions(catId,subId){
 const CATS=[
   {key:'Роли',icon:'🍣',bg:'#fff8ed'},
   {key:'Піца',icon:'🍕',bg:'#fff0f0'},
-  {key:'Темпура роли',icon:'🔥',bg:'#fff3e0'},
   {key:'Суші Бургер',icon:'🍔',bg:'#fce4ec'},
   {key:'Хенд-Рол',icon:'🌯',bg:'#e8f5e9'},
   {key:'Міні роли',icon:'🍱',bg:'#e3f2fd'},
