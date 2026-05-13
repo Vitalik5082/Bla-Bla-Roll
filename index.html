@@ -411,7 +411,7 @@ const CACHE_TTL=5*60*1000;
 
 // Subcategory map
 const SUBCATS={
-  'Роли':['Філадельфія','Каліфорнія','Авторські'],
+  'Роли':['Філадельфія','Каліфорнія','Канада','Авторські','Темпура','Запечені'],
   'Піца':['Піца'],
   'Темпура роли':['Темпура','Запечені'],
   'Суші Бургер':['Суші Бургер'],
@@ -632,7 +632,7 @@ function itemHTML(item,showDel=false){
       </div>
     </div>
     <div class="item-footer">
-      <div><div class="item-price" style="font-size:13px;">${(()=>{try{if(item.variants){const v=JSON.parse(item.variants);if(v.length>1)return v.map(x=>x.label+': '+x.price+'₴').join(' · ');}return item.price+' грн';}catch(e){return item.price+' грн';}})()}</div>${item.weight?`<div class="item-weight">${sanitize(item.weight)}</div>`:''}</div>
+      <div><div class="item-price" style="font-size:12px;line-height:1.8;">${(()=>{try{if(item.variants){const v=JSON.parse(item.variants);if(v.length>0)return v.map(x=>'<span>'+x.label+': '+x.price+'₴</span>').join('<br>');}return item.price+' грн';}catch(e){return item.price+' грн';}})()}</div>${item.weight?`<div class="item-weight">${sanitize(item.weight)}</div>`:''}</div>
       <div class="item-actions" onclick="event.stopPropagation()">
         ${showDel?`<button class="fav-btn" onclick="removeFav('${sn}')">🗑️</button>`:`<button class="fav-btn" onclick="toggleFav('${sn}',this)">${isFav?'❤️':'🤍'}</button>`}
         <button class="share-btn" onclick="shareItem('${sn}',${item.price})">↗</button>
@@ -718,8 +718,8 @@ async function addItem(){
   if(!authToken){showAlert('Не авторизовано','error');return;}
   const name=document.getElementById('fName').value.trim();
   const price=parseFloat(document.getElementById('fPrice').value);
-  if(!name||!price){showAlert('Заповни назву та ціну!','error');return;}
-  const variantsJSON=getVariantsJSON('f');const row={name,description:document.getElementById('fDesc').value.trim(),price,weight:document.getElementById('fWeight').value.trim(),category:document.getElementById('fCategory').value,subcategory:document.getElementById('fSubcategory').value,emoji:document.getElementById('fEmoji').value.trim(),badge:document.getElementById('fBadge').value,prep_time:document.getElementById('fTime').value.trim(),image_url:document.getElementById('fImage').value.trim(),variants:variantsJSON||null,is_active:true};
+  const hasVariants=fVariants.length>0;if(!name||(!price&&!hasVariants)){showAlert('Заповни назву та ціну (або додай варіанти)!','error');return;}const finalPrice=price||(fVariants[0]&&fVariants[0].price)||0;
+  const variantsJSON=getVariantsJSON('f');const row={name,description:document.getElementById('fDesc').value.trim(),price:finalPrice,weight:document.getElementById('fWeight').value.trim(),category:document.getElementById('fCategory').value,subcategory:document.getElementById('fSubcategory').value,emoji:document.getElementById('fEmoji').value.trim(),badge:document.getElementById('fBadge').value,prep_time:document.getElementById('fTime').value.trim(),image_url:document.getElementById('fImage').value.trim(),variants:variantsJSON||null,is_active:true};
   const{error}=await dbPost('menu_items',row);
   if(error){showAlert('Помилка: '+(error.message||JSON.stringify(error)),'error');return;}
   showAlert('✅ Страву додано!','success');
