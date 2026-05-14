@@ -558,7 +558,7 @@ async function openCategory(key,icon){
   const cached=getCached();
   if(cached&&cached.length>0){allItems=cached;}
   else{
-    const{data,error}=await dbGet('menu_items',null,'category,subcategory,name');
+    const{data,error}=await dbGet('menu_items',null,'category,subcategory,name,id');
     if(error){console.error('DB error:',error);document.getElementById('itemsList').innerHTML='<div class="no-results">Помилка підключення до бази даних 😕</div>';return;}
     allItems=data||[];
     if(allItems.length>0)setCache(allItems);
@@ -655,9 +655,29 @@ function openItemModal(name){
   const isFav=favorites.includes(item.name);
   document.getElementById('itemModalName').textContent=item.name;
   document.getElementById('itemModalDesc').textContent=item.description||'';
-  document.getElementById('itemModalPrice').textContent=item.price+' грн';
   document.getElementById('itemModalWeight').textContent=item.weight||'';
   document.getElementById('itemModalMeta').innerHTML=badgesHTML(item);
+
+  // Handle variants
+  let variants=[];
+  try{if(item.variants)variants=JSON.parse(item.variants);}catch(e){}
+  const priceEl=document.getElementById('itemModalPrice');
+  const variantsEl=document.getElementById('itemModalVariants');
+  if(variants.length){
+    priceEl.textContent=variants[0].price+' грн';
+    variantsEl.style.display='flex';
+    variantsEl.innerHTML=variants.map((v,i)=>
+      '<div class="variant-btn'+(i===0?' selected':'')+'" onclick="selectVariant(this,'+v.price+')">'
+      +'<div class="variant-label">'+v.label+'</div>'
+      +'<div class="variant-price">'+v.price+' грн</div>'
+      +'</div>'
+    ).join('');
+  }else{
+    priceEl.textContent=item.price+' грн';
+    variantsEl.style.display='none';
+    variantsEl.innerHTML='';
+  }
+
   const favBtn=document.getElementById('itemModalFav');
   favBtn.textContent=isFav?'❤️':'🤍';
   favBtn.onclick=()=>{toggleFav(item.name,favBtn);favBtn.textContent=favorites.includes(item.name)?'❤️':'🤍';};
@@ -726,7 +746,7 @@ async function addItem(){
   document.getElementById('fPreview').style.display='none';clearCache();loadAdminItems();
 }
 
-async function loadAdminItems(){const{data}=await dbGet('menu_items',null,'category,subcategory,name');window._adminAll=data||[];renderAdmin(window._adminAll,_adminSearch);}
+async function loadAdminItems(){const{data}=await dbGet('menu_items',null,'category,subcategory,name,id');window._adminAll=data||[];renderAdmin(window._adminAll,_adminSearch);}
 
 function renderAdmin(data,q){
   const wrap=document.getElementById('adminItemsList');
@@ -734,32 +754,45 @@ function renderAdmin(data,q){
   if(adminCat!=='all')f=f.filter(i=>i.category===adminCat);
   if(q)f=f.filter(i=>i.name.toLowerCase().includes(q.toLowerCase()));
   if(!f.length){wrap.innerHTML='<div class="loading-msg">Нічого не знайдено</div>';return;}
-  let html='',lastGroup='';
-  f.forEach(item=>{
+  // Store all items by id for safe access
+  f.forEach(function(item){ window['_item_'+item.id]=item; });
+  let h='',lastGroup='';
+  f.forEach(function(item){
     const group=item.category+(item.subcategory?' / '+item.subcategory:'');
-    if(group!==lastGroup){html+=`<div class="section-label" style="padding:10px 0 4px;">${group}</div>`;lastGroup=group;}
+    if(group!==lastGroup){h+='<div class="section-label" style="padding:10px 0 4px;">'+group+'</div>';lastGroup=group;}
     const active=item.is_active===true||item.is_active==='true';
-    html+=`<div class="admin-item">
-      <div class="admin-item-img">${item.image_url?`<img src="${item.image_url}" onerror="this.parentElement.innerHTML='${item.emoji||'🍽️'}'">`:item.emoji||'🍽️'}</div>
-      <div class="admin-item-info">
-        <div class="admin-item-name">${sanitize(item.name)}</div>
-        <div class="admin-item-meta">${item.subcategory||item.category}${item.weight?' · '+item.weight:''}${item.badge?' · '+item.badge:''}</div>
-        <div class="admin-item-price">${item.price} грн</div>
-      </div>
-      <div class="admin-item-btns">
-        <button class="toggle ${active?'on':'off'}" onclick="toggleItem('${item.name.replace(/'/g,"\'")}',${active})"></button>
-        <button class="btn-edit" onclick='openEdit(${JSON.stringify(item)})'>✏️</button>
-        <button class="btn-danger" onclick="deleteItem('${item.name.replace(/'/g,"\'").replace(/"/g,"&quot;")}')">✕</button>
-      </div>
-    </div>`;
+    const img=item.image_url
+      ?'<img src="'+item.image_url+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">'
+      :(item.emoji||'🍽️');
+    const id=item.id;
+    h+='<div class="admin-item">'
+      +'<div class="admin-item-img">'+img+'</div>'
+      +'<div class="admin-item-info">'
+      +'<div class="admin-item-name">'+sanitize(item.name)+'</div>'
+      +'<div class="admin-item-meta">'+(item.subcategory||item.category)+(item.weight?' · '+item.weight:'')+(item.badge?' · '+item.badge:'')+'</div>'
+      +'<div class="admin-item-price">'+item.price+' грн</div>'
+      +'</div>'
+      +'<div class="admin-item-btns">'
+      +'<button class="toggle '+(active?'on':'off')+'" onclick="toggleItem('+id+','+active+')"></button>'
+      +'<button class="btn-edit" onclick="openEditById('+id+')">✏️</button>'
+      +'<button class="btn-danger" onclick="deleteItem('+id+')">✕</button>'
+      +'</div>'
+      +'</div>';
   });
-  wrap.innerHTML=html;
+  wrap.innerHTML=h;
 }
 
-async function toggleItem(name,cur){await dbPatch('menu_items',{is_active:!cur},'name',name);clearCache();loadAdminItems();}
-async function deleteItem(name){
-  if(!confirm(`Видалити "${name}"?`))return;
-  const{error}=await dbDel('menu_items','name',name);
+function openEditById(id){
+  const item=window['_item_'+id];
+  if(item) openEdit(item);
+}
+
+
+async function toggleItem(id,cur){await dbPatch('menu_items',{is_active:!cur},'id',id);clearCache();loadAdminItems();}
+async function deleteItem(id){
+  const item=window['_item_'+id];
+  if(!confirm('Видалити "'+(item?item.name:id)+'"?'))return;
+  const{error}=await dbDel('menu_items','id',id);
   if(error){showAlert('Помилка: '+JSON.stringify(error),'error');return;}
   showAlert('🗑️ Видалено!','success');clearCache();loadAdminItems();
 }
