@@ -403,6 +403,20 @@ const BUCKET='menu-images';
 const CACHE_KEY='blablaroll_menu_v2';
 const CACHE_TTL=5*60*1000;
 
+const DEV_PRICE_PREVIEW=true;
+function devBumpPrice(n){return Math.ceil(n*1.1/10)*10;}
+function devBumpItems(items){
+  if(!DEV_PRICE_PREVIEW)return items;
+  return items.map(item=>{
+    const bumped={...item};
+    if(bumped.price!=null)bumped.price=devBumpPrice(bumped.price);
+    if(bumped.variants){
+      try{bumped.variants=JSON.stringify(JSON.parse(bumped.variants).map(v=>({...v,price:devBumpPrice(v.price)})));}catch(e){}
+    }
+    return bumped;
+  });
+}
+
 // Subcategory map
 const SUBCATS={
   'Роли':['Філадельфія','Каліфорнія','Канада','Авторські','Темпура','Запечені'],
@@ -553,7 +567,7 @@ async function openCategory(key,icon){
   else{
     const{data,error}=await dbGet('menu_items',null,'category,subcategory,name,id');
     if(error){console.error('DB error:',error);document.getElementById('itemsList').innerHTML='<div class="no-results">Помилка підключення до бази даних 😕</div>';return;}
-    allItems=data||[];
+    allItems=devBumpItems(data||[]);
     if(allItems.length>0)setCache(allItems);
   }
   buildCatTabs(key);
@@ -694,7 +708,7 @@ function toggleFav(name,btn){
 function removeFav(name){favorites=favorites.filter(f=>f!==name);localStorage.setItem('blablaroll_favs',JSON.stringify(favorites));updateFavCount();renderFavList();}
 function showFavorites(){
   showView('viewFavorites');
-  if(!allItems.length){dbGet('menu_items',null,'category,name').then(({data})=>{allItems=data||[];renderFavList();});}
+  if(!allItems.length){dbGet('menu_items',null,'category,name').then(({data})=>{allItems=devBumpItems(data||[]);renderFavList();});}
   else renderFavList();
 }
 function renderFavList(){
