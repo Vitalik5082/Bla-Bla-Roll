@@ -258,6 +258,12 @@ textarea{resize:vertical;min-height:60px;}
   <div class="admin-wrap">
     <div id="adminAlert"></div>
     <div class="form-card">
+      <div class="form-title">🔑 Змінити пароль</div>
+      <label>Новий пароль</label><input type="password" id="newPass1" placeholder="Мінімум 6 символів">
+      <label>Підтвердити пароль</label><input type="password" id="newPass2" placeholder="Повторіть пароль" onkeydown="if(event.key==='Enter')changePassword()">
+      <button class="btn btn-gold" style="width:100%;margin-top:14px;" onclick="changePassword()" id="changePassBtn">Змінити пароль</button>
+    </div>
+    <div class="form-card">
       <div class="form-title">➕ Додати страву</div>
       <label>Назва</label><input type="text" id="fName" placeholder="Наприклад: Філадельфія">
       <label>Опис</label><textarea id="fDesc" placeholder="Інгредієнти або короткий опис"></textarea>
@@ -733,6 +739,21 @@ async function checkLogin(){
   btn.textContent='Увійти';btn.disabled=false;
 }
 async function logout(){if(authToken)await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+authToken}});authToken=null;sessionStorage.removeItem('druzi_token');sessionStorage.removeItem('druzi_email');showView('viewMenu');}
+
+async function changePassword(){
+  const p1=document.getElementById('newPass1').value;
+  const p2=document.getElementById('newPass2').value;
+  if(!p1||p1.length<6){showAlert('Пароль має бути не менше 6 символів','error');return;}
+  if(p1!==p2){showAlert('Паролі не збігаються','error');return;}
+  const btn=document.getElementById('changePassBtn');btn.textContent='⏳';btn.disabled=true;
+  try{
+    const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:'PUT',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+authToken,'Content-Type':'application/json'},body:JSON.stringify({password:p1})});
+    const d=await r.json();
+    if(r.ok){showAlert('Пароль змінено ✅','success');document.getElementById('newPass1').value='';document.getElementById('newPass2').value='';}
+    else showAlert(d.msg||d.error_description||d.message||'Помилка зміни пароля','error');
+  }catch(e){showAlert('Помилка зєднання','error');}
+  btn.textContent='Змінити пароль';btn.disabled=false;
+}
 
 function buildAdminTabs(){
   const tabs=['all',...CATS.map(c=>c.key)];
