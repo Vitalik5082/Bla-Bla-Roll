@@ -548,11 +548,21 @@ const CATS=[
   {key:'Напої',icon:'🥤',bg:'#e0f7fa'},
 ];
 
+// Теплик дзеркалить Бла Бла Рол (та ж сама БД/Supabase) з двома відмінностями: цілі розділи
+// виключені завжди, а окремі позиції ховаються через hidden_blabla/hidden_teplyk в адмінці
+// (кнопки HIDE) — обидва прапорці живуть в одній таблиці, видимі з обох доменів.
+const SITE = location.hostname.includes('teplyk') ? 'teplyk' : 'blabla';
+const HIDDEN_CATS_TEPLYK = ['Круасани','Напої','Салати','Хенд-Рол'];
+function isHiddenForSite(item){
+  if(SITE==='teplyk') return HIDDEN_CATS_TEPLYK.includes(item.category) || !!item.hidden_teplyk;
+  return !!item.hidden_blabla;
+}
+
 function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
 function updateFavCount(){const c=favorites.length;document.querySelectorAll('#favCountHome,#favCountCat').forEach(el=>el.textContent=c);}
 
 function buildMenu(){
-  document.getElementById('categoriesList').innerHTML=CATS.map(c=>`
+  document.getElementById('categoriesList').innerHTML=CATS.filter(c=>!(SITE==='teplyk'&&HIDDEN_CATS_TEPLYK.includes(c.key))).map(c=>`
     <div class="cat-card" onclick="openCategory('${c.key}','${c.icon}')">
       <div class="cat-icon" style="background:${c.bg}">${c.icon}</div>
       <div class="cat-info"><div class="cat-name">${tc(c.key)}</div><div class="cat-desc">${tcd(c.key)}</div></div>
@@ -573,7 +583,7 @@ async function openCategory(key,icon){
   else{
     const{data,error}=await dbGet('menu_items',null,'category,subcategory,name,id');
     if(error){console.error('DB error:',error);document.getElementById('itemsList').innerHTML='<div class="no-results">Помилка підключення до бази даних 😕</div>';return;}
-    allItems=devBumpItems(data||[]);
+    allItems=devBumpItems((data||[]).filter(i=>!isHiddenForSite(i)));
     if(allItems.length>0)setCache(allItems);
   }
   buildCatTabs(key);
@@ -714,7 +724,7 @@ function toggleFav(name,btn){
 function removeFav(name){favorites=favorites.filter(f=>f!==name);localStorage.setItem('blablaroll_favs',JSON.stringify(favorites));updateFavCount();renderFavList();}
 function showFavorites(){
   showView('viewFavorites');
-  if(!allItems.length){dbGet('menu_items',null,'category,name').then(({data})=>{allItems=devBumpItems(data||[]);renderFavList();});}
+  if(!allItems.length){dbGet('menu_items',null,'category,name').then(({data})=>{allItems=devBumpItems((data||[]).filter(i=>!isHiddenForSite(i)));renderFavList();});}
   else renderFavList();
 }
 function renderFavList(){
@@ -789,6 +799,8 @@ function renderAdmin(data,q){
     const group=item.category+(item.subcategory?' / '+item.subcategory:'');
     if(group!==lastGroup){h+='<div class="section-label" style="padding:10px 0 4px;">'+group+'</div>';lastGroup=group;}
     const active=item.is_active===true||item.is_active==='true';
+    const hiddenBlabla=item.hidden_blabla===true||item.hidden_blabla==='true';
+    const hiddenTeplyk=item.hidden_teplyk===true||item.hidden_teplyk==='true';
     const img=item.image_url
       ?'<img src="'+item.image_url+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">'
       :(item.emoji||'🍽️');
@@ -801,7 +813,9 @@ function renderAdmin(data,q){
       +'<div class="admin-item-price">'+item.price+' грн</div>'
       +'</div>'
       +'<div class="admin-item-btns">'
-      +'<button class="toggle '+(active?'on':'off')+'" onclick="toggleItem('+id+','+active+')"></button>'
+      +'<button class="toggle '+(active?'on':'off')+'" onclick="toggleItem('+id+','+active+')" title="Увімк./вимк."></button>'
+      +'<button class="btn-hide" style="font-size:10px;padding:3px 6px;border-radius:6px;border:1px solid '+(hiddenBlabla?'#f44336':'#ccc')+';background:'+(hiddenBlabla?'#f44336':'#fff')+';color:'+(hiddenBlabla?'#fff':'#333')+';cursor:pointer;" onclick="toggleHidden('+id+',\'hidden_blabla\','+hiddenBlabla+')">'+(hiddenBlabla?'❌ Рол':'🙈 Рол')+'</button>'
+      +'<button class="btn-hide" style="font-size:10px;padding:3px 6px;border-radius:6px;border:1px solid '+(hiddenTeplyk?'#f44336':'#ccc')+';background:'+(hiddenTeplyk?'#f44336':'#fff')+';color:'+(hiddenTeplyk?'#fff':'#333')+';cursor:pointer;" onclick="toggleHidden('+id+',\'hidden_teplyk\','+hiddenTeplyk+')">'+(hiddenTeplyk?'❌ Теп':'🙈 Теп')+'</button>'
       +'<button class="btn-edit" onclick="openEditById('+id+')">✏️</button>'
       +'<button class="btn-danger" onclick="deleteItem('+id+')">✕</button>'
       +'</div>'
@@ -816,6 +830,9 @@ function openEditById(id){
 }
 
 async function toggleItem(id,cur){await dbPatch('menu_items',{is_active:!cur},'id',id);clearCache();loadAdminItems();}
+// HIDE-кнопки в адмінці: hidden_blabla/hidden_teplyk — одна й та ж база для обох доменів
+// (bla-bla-roll.vercel.app і bla-bla-tepluk.vercel.app), кожен сайт ховає лише "свій" прапорець.
+async function toggleHidden(id,field,cur){await dbPatch('menu_items',{[field]:!cur},'id',id);clearCache();loadAdminItems();}
 async function deleteItem(id){
   const item=window['_item_'+id];
   if(!confirm('Видалити "'+(item?item.name:id)+'"?'))return;
