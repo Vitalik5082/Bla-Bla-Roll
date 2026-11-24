@@ -551,7 +551,7 @@ const CATS=[
 // Теплик дзеркалить Бла Бла Рол (та ж сама БД/Supabase) з двома відмінностями: цілі розділи
 // виключені завжди, а окремі позиції ховаються через hidden_blabla/hidden_teplyk в адмінці
 // (кнопки HIDE) — обидва прапорці живуть в одній таблиці, видимі з обох доменів.
-const SITE = location.hostname.includes('teplyk') ? 'teplyk' : 'blabla';
+const SITE = location.hostname.includes('tepluk') ? 'teplyk' : 'blabla';
 const HIDDEN_CATS_TEPLYK = ['Круасани','Напої','Салати','Хенд-Рол'];
 function isHiddenForSite(item){
   if(SITE==='teplyk') return HIDDEN_CATS_TEPLYK.includes(item.category) || !!item.hidden_teplyk;
