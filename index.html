@@ -183,17 +183,17 @@ textarea{resize:vertical;min-height:60px;}
       <div class="info-row">
         <span class="info-icon">📍</span>
         <div><div class="info-label" id="t_address_label">Адреса</div>
-        <div class="info-val">Могилів-Подільський, Київська 12</div></div>
+        <div class="info-val" id="infoAddress">Могилів-Подільський, Київська 12</div></div>
       </div>
       <div class="info-row">
         <span class="info-icon">📞</span>
         <div><div class="info-label" id="t_phone_label">Телефон</div>
-        <a href="tel:+38+380680230871" class="info-link">+380680230871 📲</a></div>
+        <a href="tel:+380680230871" class="info-link" id="infoPhone">+380680230871 📲</a></div>
       </div>
       <div class="info-row">
         <span class="info-icon">🕐</span>
         <div><div class="info-label" id="t_hours_label">Робочий час</div>
-        <div class="info-val">10:00 – 22:00 <span class="open-pill" id="t_days">Пн–Нд</span></div>
+        <div class="info-val"><span id="infoHours">10:00 – 22:00</span> <span class="open-pill" id="t_days">Пн–Нд</span></div>
         </div>
       </div>
     </div>
@@ -470,13 +470,16 @@ function applyLang(){
   set('headerSub',t('sub'));
   const si=document.getElementById('searchInput');if(si)si.placeholder=t('search');
   const lb=document.getElementById('langBtn');if(lb)lb.textContent=currentLang==='uk'?'EN':'УК';
+  applySiteInfo();
   buildMenu();
   updateFavCount();
 }
 function toggleLang(){currentLang=currentLang==='uk'?'en':'uk';localStorage.setItem('blablaroll_lang',currentLang);applyLang();updateStatus();}
 
 function updateStatus(){
-  const now=new Date(),mins=now.getHours()*60+now.getMinutes(),open=mins>=600&&mins<1320;
+  const info=SITE_INFO[SITE];
+  const now=new Date(),mins=now.getHours()*60+now.getMinutes();
+  const open=!info.closedDays.includes(now.getDay())&&mins>=info.openMin&&mins<info.closeMin;
   const p=document.getElementById('statusPill');
   p.className='status-pill '+(open?'status-open':'status-closed');
   p.textContent='● '+t(open?'open':'closed');
@@ -553,6 +556,22 @@ const CATS=[
 // (кнопки HIDE) — обидва прапорці живуть в одній таблиці, видимі з обох доменів.
 const SITE = location.hostname.includes('tepluk') ? 'teplyk' : 'blabla';
 const HIDDEN_CATS_TEPLYK = ['Круасани','Напої','Салати','Хенд-Рол'];
+// Контакти/адреса/графік — окремі для кожного домену (та ж БД меню, але це не в БД, тому прямо
+// тут). closedDays: 0=Нд,1=Пн...6=Сб (JS Date#getDay()).
+const SITE_INFO = {
+  blabla: {sub:'Роли та Піца · Могилів-Подільський', address:'Могилів-Подільський, Київська 12', phone:'+380680230871', hoursText:'10:00 – 22:00', daysText:'Пн–Нд', openMin:600, closeMin:1320, closedDays:[]},
+  teplyk: {sub:'Роли та Піца · Теплик', address:'Теплик', phone:'+380680186101', hoursText:'11:00 – 21:00', daysText:'Вт–Сб', openMin:660, closeMin:1260, closedDays:[0,1]}
+};
+function applySiteInfo(){
+  const info=SITE_INFO[SITE];
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  set('infoAddress',info.address);
+  set('infoHours',info.hoursText);
+  set('t_days',info.daysText);
+  set('headerSub',info.sub);
+  const phoneEl=document.getElementById('infoPhone');
+  if(phoneEl){phoneEl.href='tel:'+info.phone;phoneEl.textContent=info.phone+' 📲';}
+}
 function isHiddenForSite(item){
   if(SITE==='teplyk') return HIDDEN_CATS_TEPLYK.includes(item.category) || !!item.hidden_teplyk;
   return !!item.hidden_blabla;
